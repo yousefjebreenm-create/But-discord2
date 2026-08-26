@@ -1,0 +1,28 @@
+require('dotenv').config();
+
+module.exports = {
+  "token":                   process.env.TOKEN,
+  "ownerID":                 process.env.OWNER_ID,
+  "clientID":                process.env.CLIENT_ID,
+  "clientSecret":            process.env.CLIENT_SECRET,
+  "dashboardURL":            process.env.DASHBOARD_URL            || "http://localhost:3000",
+  "sessionSecret":           process.env.SESSION_SECRET           || "hell-secret",
+  "supportGuildId":          process.env.SUPPORT_GUILD_ID,
+  "mainGuildId":             process.env.MAIN_GUILD_ID,
+  "ticketCategoryId":        process.env.TICKET_CATEGORY_ID,
+  "logChannelId":            process.env.LOG_CHANNEL_ID,
+  "transcriptChannelId":     process.env.TRANSCRIPT_CHANNEL_ID,
+  "staffCommandsChannelId":  process.env.STAFF_COMMANDS_CHANNEL_ID,
+  "staffRoles":              process.env.STAFF_ROLES ? process.env.STAFF_ROLES.split(',') : [],
+  "forceClaimRole":          process.env.FORCE_CLAIM_ROLE         || "",
+  "blockedRole":             process.env.BLOCKED_ROLE             || "",
+  "roleEmojis":              process.env.ROLE_EMOJIS ? JSON.parse(process.env.ROLE_EMOJIS) : {},
+  "userEmoji":               process.env.USER_EMOJI               || "",
+  "maxClaimedPerStaff":      parseInt(process.env.MAX_CLAIMED)    || 3,
+  "autoCloseMinutes":        parseInt(process.env.AUTO_CLOSE)     || 1440,
+  "accentColor":             parseInt(process.env.ACCENT_COLOR)   || 16711680,
+  "successColor":            parseInt(process.env.SUCCESS_COLOR)  || 16711680,
+  "errorColor":              parseInt(process.env.ERROR_COLOR)    || 16711680,
+  "warnColor":               parseInt(process.env.WARN_COLOR)     || 16711680,
+  "ratingChannelId":         process.env.RATING_CHANNEL_ID        || "",
+};
