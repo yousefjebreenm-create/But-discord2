@@ -1,0 +1,162 @@
+<!-- ═══════════════════════════════════════════════════
+     Whitelist Tab — HELL Dashboard
+     ضيف هذا الـ partial جوه صفحة الداشبورد الرئيسية
+     ═══════════════════════════════════════════════════ -->
+
+<div class="tab-pane" id="tab-whitelist">
+  <div class="section-header">
+    <h2><i class="icon-shield"></i> Whitelist</h2>
+    <p class="section-desc">الأشخاص اللي عندهم صلاحية دخول الداشبورد</p>
+  </div>
+
+  <!-- Add form — يظهر للأونر بس -->
+  <% if (user.id === config.ownerID) { %>
+  <div class="card wl-add-card">
+    <div class="card-body">
+      <h4>إضافة مستخدم</h4>
+      <div class="wl-add-row">
+        <input
+          id="wl-input-id"
+          type="text"
+          placeholder="Discord ID  مثال: 123456789012345678"
+          maxlength="20"
+        />
+        <input
+          id="wl-input-note"
+          type="text"
+          placeholder="ملاحظة (اختياري)"
+          maxlength="100"
+        />
+        <button id="wl-add-btn" class="btn btn-primary">
+          <i class="icon-plus"></i> إضافة
+        </button>
+      </div>
+      <p id="wl-msg" class="wl-msg hidden"></p>
+    </div>
+  </div>
+  <% } %>
+
+  <!-- Table -->
+  <div class="card">
+    <div class="card-body">
+      <table class="wl-table" id="wl-table">
+        <thead>
+          <tr>
+            <th>Discord ID</th>
+            <th>ملاحظة</th>
+            <th>تاريخ الإضافة</th>
+            <% if (user.id === config.ownerID) { %><th>حذف</th><% } %>
+          </tr>
+        </thead>
+        <tbody id="wl-tbody">
+          <tr><td colspan="4" class="loading-row">جارٍ التحميل…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════
+     Whitelist JS — ضيفه في آخر الصفحة قبل </body>
+     ═══════════════════════════════════════════════════ -->
+<script>
+(function () {
+  const isOwner = '<%= user.id %>' === '<%= config.ownerID %>';
+  const tbody   = document.getElementById('wl-tbody');
+  const msg     = document.getElementById('wl-msg');
+
+  // ── تحميل القائمة ───────────────────────────────────
+  async function loadWhitelist() {
+    try {
+      const res  = await fetch('/api/whitelist');
+      const data = await res.json();
+
+      if (!data.success || data.list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="empty-row">لا يوجد أحد في القائمة بعد</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = data.list.map(entry => `
+        <tr data-id="${entry.discordId}">
+          <td class="mono">${entry.discordId}</td>
+          <td>${entry.note || '—'}</td>
+          <td>${new Date(entry.addedAt).toLocaleDateString('ar-IQ')}</td>
+          ${isOwner ? `<td><button class="btn btn-danger btn-sm wl-del-btn" data-id="${entry.discordId}">حذف</button></td>` : ''}
+        </tr>
+      `).join('');
+
+      // ربط أزرار الحذف
+      if (isOwner) {
+        document.querySelectorAll('.wl-del-btn').forEach(btn => {
+          btn.addEventListener('click', () => deleteEntry(btn.dataset.id));
+        });
+      }
+    } catch (e) {
+      tbody.innerHTML = `<tr><td colspan="4" class="error-row">خطأ في تحميل البيانات</td></tr>`;
+    }
+  }
+
+  // ── إضافة ─────────────────────────────────────────
+  async function addEntry() {
+    const discordId = document.getElementById('wl-input-id').value.trim();
+    const note      = document.getElementById('wl-input-note').value.trim();
+
+    if (!discordId) return showMsg('أدخل Discord ID', 'error');
+
+    try {
+      const res  = await fetch('/api/whitelist', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ discordId, note }),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        document.getElementById('wl-input-id').value   = '';
+        document.getElementById('wl-input-note').value = '';
+        showMsg('تمت الإضافة بنجاح ✓', 'success');
+        loadWhitelist();
+      } else {
+        showMsg(data.message || 'حدث خطأ', 'error');
+      }
+    } catch (e) {
+      showMsg('تعذّر الاتصال بالسيرفر', 'error');
+    }
+  }
+
+  // ── حذف ───────────────────────────────────────────
+  async function deleteEntry(discordId) {
+    if (!confirm(`تأكيد حذف ${discordId} من الـ Whitelist?`)) return;
+
+    try {
+      const res  = await fetch(`/api/whitelist/${discordId}`, { method: 'DELETE' });
+      const data = await res.json();
+
+      if (data.success) {
+        showMsg('تم الحذف ✓', 'success');
+        loadWhitelist();
+      } else {
+        showMsg(data.message || 'حدث خطأ', 'error');
+      }
+    } catch (e) {
+      showMsg('تعذّر الاتصال بالسيرفر', 'error');
+    }
+  }
+
+  // ── رسالة مؤقتة ───────────────────────────────────
+  function showMsg(text, type) {
+    msg.textContent  = text;
+    msg.className    = `wl-msg ${type}`;
+    setTimeout(() => { msg.className = 'wl-msg hidden'; }, 3000);
+  }
+
+  // ── Init ─────────────────────────────────────────
+  loadWhitelist();
+
+  if (isOwner) {
+    document.getElementById('wl-add-btn')
+      .addEventListener('click', addEntry);
+  }
+})();
+</script>
